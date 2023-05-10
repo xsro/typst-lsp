@@ -51,6 +51,26 @@ scale_ele.addEventListener("input", () => {
     resize(parseFloat(scale_ele.value));
 });
 
+function jumpSource(event) {
+    const x = event.offsetX / event.target.width;
+    const y = event.offsetY / event.target.height;
+    vscode.postMessage({
+        command: "click",
+        x,
+        y,
+    });
+}
+page_ele.addEventListener("click", jumpSource);
+page_ele.parentElement.addEventListener("scroll", (e) => {
+    vscode.setState({
+        ...vscode.getState(),
+        scrollLeft: e.target.scrollLeft,
+        scrollTop: e.target.scrollTop,
+    });
+});
+const state = vscode.getState() || { scrollLeft: 0, scrollTop: 0 };
+page_ele.parentElement.scrollTo(state.scrollLeft, state.scrollTop);
+
 // Handle messages sent from the extension to the webview
 window.addEventListener("message", async (event) => {
     const message = event.data; // The json data that the extension sent
@@ -59,7 +79,6 @@ window.addEventListener("message", async (event) => {
         case "load":
             page_ele.src = message.src;
             META = message.data;
-            document.getElementById("typst-src").value = message.data.typ;
             break;
     }
 });

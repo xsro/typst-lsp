@@ -6,10 +6,10 @@
     display: inline;
     width: auto;
 }
-.control input [type="number"] {
-    width: 10%;
+.control [type="number"] {
+    width: 10vh;
 }
-.control input [type="text"] {
+.control [type="text"] {
     text-align: right;
     width: 20%;
 }

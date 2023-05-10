@@ -5,16 +5,7 @@ import * as os from "os";
 import * as fs from "fs";
 import { resolve } from "path";
 import * as vscode from "vscode";
-
-export interface PNGData {
-    src: vscode.Uri;
-    height: number;
-    width: number;
-    /**0-index page num */
-    page: number;
-    total_page: number;
-    typ: string;
-}
+import { PNGData } from "./commands";
 
 const tempdir = resolve(os.tmpdir(), "typst-lsp-vscode");
 export function tempfile(basename: string, dir = false): string {
@@ -37,11 +28,15 @@ function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
 }
 
 export class PreviewHandler {
-    pixel_per_pt = 3;
+    pixel_per_pt = 1;
     constructor(public typ: vscode.Uri, public png_folder: vscode.Uri, public data: PNGData) {
         console.log(png_folder);
     }
     update_page_config(): Promise<void> | void {
+        return;
+    }
+    click(x: number, y: number): Promise<void> | void {
+        console.log(x, y);
         return;
     }
 }
@@ -104,7 +99,7 @@ export class PdfPreviewPanel {
         this._panel.onDidChangeViewState(
             (_e) => {
                 if (this._panel.visible) {
-                    this._update();
+                    // this._update();
                 }
             },
             null,
@@ -124,6 +119,11 @@ export class PdfPreviewPanel {
                         this.handler.pixel_per_pt = px_per_pt;
                         await this.handler.update_page_config();
                         this.updateSrc();
+                        return;
+                    case "click":
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                        const { x, y } = message;
+                        this.handler.click(x, y);
                         return;
                 }
             },
@@ -200,9 +200,6 @@ export class PdfPreviewPanel {
                         <input id="reload" type="button" value="⟲">
                         <input id="window-width" type="button" value="▭">
                         <input id="window-height" type="button" value="▯">
-                        <input id="typst-src" type="text" readonly=true spellcheck=false value="${
-                            this.handler.typ.path.substring(this.handler.typ.path.lastIndexOf("/")+1)
-                        }">
                         <label for="px_per_pt">PxPerPt</label>
                         <input id="px_per_pt" type="number" min="0.1" max="10" step="0.01" value="1"> 
                     </div>

@@ -7,12 +7,13 @@ use tower_lsp::{
 };
 
 use super::TypstServer;
-use typst;
+use typst::{self, geom::Abs};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LspCommand {
     ExportPdf,
     ExportPng,
+    JumpFromClick,
 }
 
 impl From<LspCommand> for String {
@@ -20,6 +21,7 @@ impl From<LspCommand> for String {
         match command {
             LspCommand::ExportPdf => "typst-lsp.doPdfExport".to_string(),
             LspCommand::ExportPng => "typst-lsp.doPngExport".to_string(),
+            LspCommand::JumpFromClick => "typst-lsp.jumpFromClick".to_string(),
         }
     }
 }
@@ -29,6 +31,7 @@ impl LspCommand {
         match command {
             "typst-lsp.doPdfExport" => Some(Self::ExportPdf),
             "typst-lsp.doPngExport" => Some(Self::ExportPng),
+            "typst-lsp.jumpFromClick" => Some(Self::JumpFromClick),
             _ => None,
         }
     }
@@ -151,5 +154,81 @@ impl TypstServer {
         }
         self.update_all_diagnostics(workspace, diagnostics).await;
         Ok(Some(val))
+    }
+
+    pub async fn jump_from_click(&self, arguments: Vec<Value>) -> Result<Option<Value>>{
+        if arguments.is_empty() {
+            return Err(Error::invalid_params("Missing file URI argument"));
+        }
+
+        //the document uri to compile
+        let Some(file_uri) = arguments.first().and_then(|v| v.as_str()) 
+        else {
+            return Err(Error::invalid_params(
+                "Missing file URI as first argument",
+            ));
+        };
+        let file_uri = Url::parse(file_uri)
+        .map_err(|_| Error::invalid_params("Parameter is not a valid URI"))?;
+
+        //the page idx
+        let Some(page) = arguments.get(1).and_then(|v| v.as_u64()) else {
+            return Err(Error::invalid_params(
+                "Missing page as third argument",
+            ));
+        };
+
+        let Some(x) = arguments.get(2).and_then(|v| v.as_f64()) else {
+            return Err(Error::invalid_params(
+                "Missing page as third argument",
+            ));
+        };
+        let Some(y) = arguments.get(3).and_then(|v| v.as_f64()) else {
+            return Err(Error::invalid_params(
+                "Missing page as third argument",
+            ));
+        };
+
+        let page_index:usize=page.try_into().unwrap();
+
+        let (world, _) = self.get_world_with_main_uri(&file_uri).await;
+        let workspace = world.get_workspace();
+
+        let diagnostics;
+
+        {
+            let result=self.compile_source(&world);
+            let document=result.0;
+            diagnostics=result.1;
+            if let Some(document) = document {
+                if document.pages.len()<= page_index{
+                    return Err(Error::invalid_params(
+                        "Page out of range",
+                    ));
+                };
+                let frame=&document.pages[page_index];
+                let frames=&document.pages;
+                let width=document.pages[page_index].width();// in pt
+                let height=document.pages[page_index].height();// in pt
+                let click=typst::geom::Point::new(width*x,height*y);
+                let jump=typst::ide::jump_from_click(&world, frames, frame, click);
+                if jump.is_none() {
+                    return Ok(None)
+                }
+                let jump=jump.unwrap();
+                match jump{
+                    typst::ide::Jump::Source(id, offset) => {
+                        let url=workspace.sources.get_open_source_by_id(id.into());
+                        let path=url.as_ref().path().to_string_lossy();
+                        let result=json!({"path":path,"byte offset":offset});
+                        return Ok(Some(result))
+                    },
+                    typst::ide::Jump::Url(_) => todo!(),
+                    typst::ide::Jump::Position(_) => todo!(),
+                }
+            };
+        }
+        self.update_all_diagnostics(workspace, diagnostics).await;
+        Ok(None)
     }
 }

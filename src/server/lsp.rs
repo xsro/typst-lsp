@@ -211,6 +211,10 @@ impl LanguageServer for TypstServer {
                 let r=self.command_export_png(arguments).await?;
                 return Ok(r);
             }
+            Some(LspCommand::JumpFromClick) => {
+                let r=self.jump_from_click(arguments).await?;
+                return Ok(r);
+            }
             None => {
                 return Err(jsonrpc::Error::method_not_found());
             }

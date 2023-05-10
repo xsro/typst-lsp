@@ -15,9 +15,16 @@ import {
     type LanguageClientOptions,
     type ServerOptions,
 } from "vscode-languageclient/node";
-import { PdfPreviewPanel, tempfile, PreviewHandler, PNGData } from "./viewer";
+import { PdfPreviewPanel, tempfile, PreviewHandler } from "./viewer";
+import { ClientCommand } from "./commands";
+import { Selection } from "vscode";
+import { ViewColumn } from "vscode";
 
 let client: LanguageClient | undefined = undefined;
+const cmd = new ClientCommand(() => {
+    if (client === undefined) throw new Error("client not ready");
+    else return client;
+});
 
 export function activate(context: ExtensionContext): Promise<void> {
     const config = workspace.getConfiguration("typst-lsp");
@@ -94,25 +101,6 @@ async function commandExportCurrentPdf(): Promise<void> {
     });
 }
 
-async function commandExportCurrentPdfAsPng(
-    src: Uri,
-    dst: Uri,
-    page = 0,
-    pixel_per_pt = 2
-): Promise<PNGData> {
-    const val = await client
-        ?.sendRequest("workspace/executeCommand", {
-            command: "typst-lsp.doPngExport",
-            arguments: [src.toString(), dst.fsPath, page, pixel_per_pt, 0],
-        })
-        .catch(() => {
-            console.error("lsp export error");
-        });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    (val as any).src = dst;
-    return val as PNGData;
-}
-
 class Handler extends PreviewHandler {
     png_idx = 0;
     async update_page_config(): Promise<void> {
@@ -121,13 +109,31 @@ class Handler extends PreviewHandler {
             this.png_folder,
             this.data.page.toString() + "_" + this.png_idx.toString() + ".png"
         );
-        const res = await commandExportCurrentPdfAsPng(
-            this.typ,
-            png,
-            this.data.page,
-            this.pixel_per_pt
-        );
+        const res = await cmd.exportPng(this.typ, png, this.data.page, this.pixel_per_pt);
         this.data = res;
+    }
+    async click(x: number, y: number): Promise<void> {
+        const res = await cmd.jumpFromClick(this.typ, this.data.page, x, y);
+        if (res?.path != null) {
+            let viewColumn = ViewColumn.One;
+            window.visibleTextEditors.forEach((e) => {
+                if (e.document.uri.fsPath === res.path && e.viewColumn !== undefined) {
+                    viewColumn = e.viewColumn;
+                }
+            });
+            const doc = await workspace.openTextDocument(res.path);
+            if (res["byte offset"] != null) {
+                const buffer = Buffer.from(doc.getText());
+                const s = buffer.subarray(0, res["byte offset"]).toString();
+                const pos = doc.positionAt(s.length);
+                const range = doc.getWordRangeAtPosition(pos);
+                if (range !== undefined) {
+                    const selection = new Selection(range.start, range.end);
+                    await window.showTextDocument(Uri.file(res.path), { selection, viewColumn });
+                }
+            }
+        }
+        return;
     }
 }
 
@@ -148,12 +154,18 @@ async function commandShowPdf(ctx: ExtensionContext): Promise<void> {
     const png_dir = Uri.file(png_dir_folder);
     const png = Uri.joinPath(png_dir, "first.png");
 
-    await commandExportCurrentPdfAsPng(uri, png, 0, 6)
-        .then((data) => {
-            const h = new Handler(uri, png_dir, data);
-            PdfPreviewPanel.createOrShow(ctx.extensionUri, h);
-        })
-        .catch(async (e) => {
-            await window.showErrorMessage(`compile ${uri.fsPath} failed`, JSON.stringify(e));
-        });
+    const data = await cmd.exportPng(uri, png, 0, 1).catch(async (e) => {
+        await window.showErrorMessage(`compile ${uri.fsPath} failed`, JSON.stringify(e));
+    });
+    if (typeof data !== "object") return;
+    const h = new Handler(uri, png_dir, data);
+    PdfPreviewPanel.createOrShow(ctx.extensionUri, h);
+    let last_run = 0;
+    workspace.onDidChangeTextDocument(async (e) => {
+        if (!e.document.uri.path.endsWith(".typ")) return;
+        if (Date.now() - last_run < 1000) return;
+        await h.update_page_config();
+        PdfPreviewPanel.currentPanel?.updateSrc();
+        last_run = Date.now();
+    });
 }
