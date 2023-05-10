@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use serde_json::Value as JsonValue;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{jsonrpc, LanguageServer};
@@ -200,9 +202,14 @@ impl LanguageServer for TypstServer {
             work_done_progress_params: _,
         } = params;
         self.client.log_message(MessageType::INFO, &command).await;
+        self.client.log_message(MessageType::INFO, format!("{:?}",arguments)).await;
         match LspCommand::parse(&command) {
             Some(LspCommand::ExportPdf) => {
                 self.command_export_pdf(arguments).await?;
+            }
+            Some(LspCommand::ExportPng) => {
+                let r=self.command_export_png(arguments).await?;
+                return Ok(r);
             }
             None => {
                 return Err(jsonrpc::Error::method_not_found());

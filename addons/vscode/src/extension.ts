@@ -3,7 +3,6 @@ import {
     workspace,
     window,
     commands,
-    ViewColumn,
     Uri,
     WorkspaceConfiguration,
 } from "vscode";
@@ -16,6 +15,7 @@ import {
     type LanguageClientOptions,
     type ServerOptions,
 } from "vscode-languageclient/node";
+import { PdfPreviewPanel, tempfile, PreviewHandler, PNGData } from "./viewer";
 
 let client: LanguageClient | undefined = undefined;
 
@@ -42,7 +42,9 @@ export function activate(context: ExtensionContext): Promise<void> {
     context.subscriptions.push(
         commands.registerCommand("typst-lsp.exportCurrentPdf", commandExportCurrentPdf)
     );
-    context.subscriptions.push(commands.registerCommand("typst-lsp.showPdf", commandShowPdf));
+    context.subscriptions.push(
+        commands.registerCommand("typst-lsp.showPdf", () => commandShowPdf(context))
+    );
 
     return client.start();
 }
@@ -92,30 +94,66 @@ async function commandExportCurrentPdf(): Promise<void> {
     });
 }
 
+async function commandExportCurrentPdfAsPng(
+    src: Uri,
+    dst: Uri,
+    page = 0,
+    pixel_per_pt = 2
+): Promise<PNGData> {
+    const val = await client
+        ?.sendRequest("workspace/executeCommand", {
+            command: "typst-lsp.doPngExport",
+            arguments: [src.toString(), dst.fsPath, page, pixel_per_pt, 0],
+        })
+        .catch(() => {
+            console.error("lsp export error");
+        });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+    (val as any).src = dst;
+    return val as PNGData;
+}
+
+class Handler extends PreviewHandler {
+    png_idx = 0;
+    async update_page_config(): Promise<void> {
+        this.png_idx = (this.png_idx + 1) % 100;
+        const png = Uri.joinPath(
+            this.png_folder,
+            this.data.page.toString() + "_" + this.png_idx.toString() + ".png"
+        );
+        const res = await commandExportCurrentPdfAsPng(
+            this.typ,
+            png,
+            this.data.page,
+            this.pixel_per_pt
+        );
+        this.data = res;
+    }
+}
+
 /**
  * Implements the functionality for the 'Show PDF' button shown in the editor title
  * if a `.typ` file is opened.
  *
  */
-async function commandShowPdf(): Promise<void> {
+async function commandShowPdf(ctx: ExtensionContext): Promise<void> {
     const activeEditor = window.activeTextEditor;
     if (activeEditor === undefined) {
         return;
     }
 
     const uri = activeEditor.document.uri;
-    // change the file extension to `.pdf` as we want to open the pdf file
-    // and not the currently opened `.typ` file.
-    const n = uri.toString().lastIndexOf(".");
-    const pdf_uri = Uri.parse(uri.toString().slice(0, n) + ".pdf");
 
-    try {
-        await workspace.fs.stat(pdf_uri);
-    } catch {
-        // only create pdf if it does not exist yet
-        await commandExportCurrentPdf();
-    } finally {
-        // here we can be sure that the pdf exists
-        await commands.executeCommand("vscode.open", pdf_uri, ViewColumn.Beside);
-    }
+    const png_dir_folder = tempfile(path.basename(uri.fsPath, ".typ"), true);
+    const png_dir = Uri.file(png_dir_folder);
+    const png = Uri.joinPath(png_dir, "first.png");
+
+    await commandExportCurrentPdfAsPng(uri, png, 0, 6)
+        .then((data) => {
+            const h = new Handler(uri, png_dir, data);
+            PdfPreviewPanel.createOrShow(ctx.extensionUri, h);
+        })
+        .catch(async (e) => {
+            await window.showErrorMessage(`compile ${uri.fsPath} failed`, JSON.stringify(e));
+        });
 }

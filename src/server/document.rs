@@ -38,21 +38,28 @@ impl TypstServer {
     }
 
     pub async fn run_export(&self, world: &WorkspaceWorld, source: &Source) {
-        let (document, _) = self.compile_source(world);
+        {
+            let (document, _) = self.compile_source(world);
 
-        if let Some(document) = document {
-            self.export_pdf(source, &document).await;
+            if let Some(document) = document {
+                self.export_pdf(source, &document);
+            }
         }
     }
 
     pub async fn run_diagnostics_and_export(&self, world: &WorkspaceWorld, source: &Source) {
-        let (document, diagnostics) = self.compile_source(world);
+        let diagnostics;
+        {
+            let result = self.compile_source(world);
+            let document = result.0;
+            diagnostics = result.1;
 
+            if let Some(document) = document {
+                self.export_pdf(source, &document);
+            }
+        }
         self.update_all_diagnostics(world.get_workspace(), diagnostics)
             .await;
-        if let Some(document) = document {
-            self.export_pdf(source, &document).await;
-        }
     }
 
     pub async fn run_diagnostics(&self, world: &WorkspaceWorld, source: &Source) {

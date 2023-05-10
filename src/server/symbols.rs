@@ -82,7 +82,7 @@ fn get_ident(
             };
             let kind = match parent.kind() {
                 // in case we have a Pattern holding an Ident, we need to check the parent of the Pattern
-                SyntaxKind::Pattern => {
+                SyntaxKind::Ident => {
                     let Some(parent) = parent.parent() else {
                         return Ok(None);
                     };

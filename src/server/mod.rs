@@ -51,7 +51,7 @@ impl TypstServer {
         let source_id = workspace
             .sources
             .get_id_by_uri(main)
-            .expect("source should exist");
+            .expect(&format!("source {:?} should exist at {:?}",main,workspace.sources.get_uris()));
         drop(workspace);
         (self.get_world_with_main(source_id).await, source_id)
     }
