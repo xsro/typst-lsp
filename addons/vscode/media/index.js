@@ -62,14 +62,21 @@ function jumpSource(event) {
 }
 page_ele.addEventListener("click", jumpSource);
 page_ele.parentElement.addEventListener("scroll", (e) => {
-    vscode.setState({
-        ...vscode.getState(),
-        scrollLeft: e.target.scrollLeft,
-        scrollTop: e.target.scrollTop,
-    });
+    setTimeout(() => {
+        vscode.setState({
+            ...vscode.getState(),
+            scrollLeft: e.target.scrollLeft,
+            scrollTop: e.target.scrollTop,
+        });
+    }, 100);
 });
-const state = vscode.getState() || { scrollLeft: 0, scrollTop: 0 };
-page_ele.parentElement.scrollTo(state.scrollLeft, state.scrollTop);
+const state = vscode.getState();
+if (state && state.scrollTop && state.scrollLeft)
+    page_ele.parentElement.scrollTo({
+        top: state.scrollTop,
+        left: state.scrollLeft,
+        behavior: "smooth",
+    });
 
 // Handle messages sent from the extension to the webview
 window.addEventListener("message", async (event) => {
