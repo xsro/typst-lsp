@@ -35,8 +35,8 @@ export class PreviewHandler {
     update_page_config(): Promise<void> | void {
         return;
     }
-    click(x: number, y: number): Promise<void> | void {
-        console.log(x, y);
+    click(x: number, y: number,page:number): Promise<void> | void {
+        console.log(x, y,page);
         return;
     }
 }
@@ -121,9 +121,7 @@ export class PdfPreviewPanel {
                         this.updateSrc();
                         return;
                     case "click":
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                        const { x, y } = message;
-                        this.handler.click(x, y);
+                        this.handler.click(message.x, message.y,message.page);
                         return;
                 }
             },
@@ -179,6 +177,18 @@ export class PdfPreviewPanel {
             png: webview.asWebviewUri(this.handler.data.src).toString(),
         };
 
+        const pages:string[]=[]
+        for (let i=0;i<this.handler.data.total_page;i++){
+            let img=`content not sended for performance`;
+            if(this.handler.data.page==i)
+                img=`<img src="${uris.png}" alt=${nonce} style="height:${this.handler.data.height}pt;width:${this.handler.data.width}pt">`;
+            pages.push(`
+<div id="page_${i}" class="page_canvas" style="height:${this.handler.data.height}pt;width:${this.handler.data.width}pt">
+${img}
+</div>
+<hr>`)
+        }
+
         return `<!DOCTYPE html>
 			<html lang="en">
 			<head>
@@ -191,20 +201,15 @@ export class PdfPreviewPanel {
 			<body>
                 <div class="container">
                     <div class="control">
-                        <label for="page">Page</label>
-                        <input id="page" type="number" min="1" value="${
-                            this.handler.data.page + 1
-                        }">
                         <label for="scale">Scale</label>
                         <input id="scale" type="number" min="0.1" max="10" step="0.01" value="0">
-                        <input id="reload" type="button" value="⟲">
                         <input id="window-width" type="button" value="▭">
                         <input id="window-height" type="button" value="▯">
                         <label for="px_per_pt">PxPerPt</label>
                         <input id="px_per_pt" type="number" min="0.1" max="10" step="0.01" value="1"> 
                     </div>
                     <div class="page_container">
-                    <img id="page_canvas" src="${uris.png}" alt="${nonce}">
+                        ${pages.join("")}
                     </div>
                 </div>
                 <script>var META=${JSON.stringify(this.handler.data)}</script>

@@ -112,8 +112,8 @@ class Handler extends PreviewHandler {
         const res = await cmd.exportPng(this.typ, png, this.data.page, this.pixel_per_pt);
         this.data = res;
     }
-    async click(x: number, y: number): Promise<void> {
-        const res = await cmd.jumpFromClick(this.typ, this.data.page, x, y);
+    async click(x: number, y: number,page:number): Promise<void> {
+        const res = await cmd.jumpFromClick(this.typ, page, x, y);
         if (res?.path != null) {
             let viewColumn = ViewColumn.One;
             window.visibleTextEditors.forEach((e) => {

@@ -3,65 +3,72 @@ const vscode = acquireVsCodeApi();
 // this value will insert by extension
 // const META={"height":841.89105,"page":0,"total_page":2,"typ":"/Users/apple/repo/persue-master/doc/overview.typ","width":595.2764999999999,"src":{"$mid":1,"fsPath":"/var/folders/20/m3sv_7d56dj8_m_79qc3ypw00000gn/T/typst-lsp-vscode/overview/first.png","path":"/var/folders/20/m3sv_7d56dj8_m_79qc3ypw00000gn/T/typst-lsp-vscode/overview/first.png","scheme":"file"}}
 
-const page_idx_ele = document.getElementById("page");
 const scale_ele = document.getElementById("scale");
-const page_ele = document.getElementById("page_canvas");
+const page_eles = document.getElementsByClassName("page_canvas");
+const page_container = document.getElementsByClassName("page_container")[0];
 const window_height_ele = document.getElementById("window-height");
 const window_width_ele = document.getElementById("window-width");
 const px_per_pt_ele = document.getElementById("px_per_pt");
 
+const visible_pages = {};
+const page_meta = {}
+
 /**send request to host for page*/
-function reload() {
-    const page = parseInt(page_idx_ele.value);
+function load(page) {
     const px_per_pt = parseFloat(px_per_pt_ele.value);
     vscode.postMessage({
         command: "page",
-        page: page - 1,
+        page: page,
         px_per_pt,
     });
 }
 
-page_idx_ele.addEventListener("input", reload);
-px_per_pt_ele.addEventListener("input", reload);
-document.getElementById("reload").addEventListener("click", reload);
 
+const oldSize = {}
 function resize(scale = undefined) {
-    const s = vscode.getState() || { scale: "window width" };
-    vscode.setState({ ...s });
-    let step = parseFloat(scale_ele.step);
-    if (scale === undefined) {
-        scale = s.scale;
+    for (let i = 0; i < page_eles.length; i++) {
+        const ele=page_eles[i];
+        if (oldSize[ele.id] == undefined) {
+            oldSize[ele.id] = { width: ele.clientWidth, height: ele.clientHeight }
+        }
+        const s = vscode.getState() || { scale: "window width" };
+        let step = parseFloat(scale_ele.step);
+        if (scale === undefined) {
+            scale = s.scale;
+        }
+        vscode.setState({ ...s, scale });
+        if (scale == "window width") {
+            scale = Math.floor(window.innerWidth / oldSize[ele.id].width / step) * step;
+        }
+        if (scale == "window height") {
+            scale = Math.floor(window.innerHeight / oldSize[ele.id].height / step) * step;
+        }
         scale_ele.value = scale;
+        
+        ele.style.width = oldSize[ele.id].width * scale + "px";
+        ele.style.height = oldSize[ele.id].height * scale + "px";
     }
-    if (scale == "window width") {
-        scale = Math.floor(window.innerWidth / META.width / step) * step;
-        scale_ele.value = scale;
-    }
-    if (scale == "window height") {
-        scale = Math.floor(window.innerHeight / META.height / step) * step;
-        scale_ele.value = scale;
-    }
-    page_ele.style.width = META.width * scale + "px";
-    page_ele.style.height = META.height * scale + "px";
 }
-
+scale_ele.addEventListener("input", ()=>resize(parseFloat(scale_ele.value)))
 window_height_ele.addEventListener("click", () => resize("window height"));
 window_width_ele.addEventListener("click", () => resize("window width"));
-scale_ele.addEventListener("input", () => {
-    resize(parseFloat(scale_ele.value));
-});
+resize();
+
+
 
 function jumpSource(event) {
+    const page = parseInt(event.target.parentElement.id.replace("page_", ""))
     const x = event.offsetX / event.target.width;
     const y = event.offsetY / event.target.height;
     vscode.postMessage({
         command: "click",
         x,
         y,
+        page,
     });
 }
-page_ele.addEventListener("click", jumpSource);
-page_ele.parentElement.addEventListener("scroll", (e) => {
+
+page_container.addEventListener("scroll", (e) => {
     setTimeout(() => {
         vscode.setState({
             ...vscode.getState(),
@@ -71,8 +78,8 @@ page_ele.parentElement.addEventListener("scroll", (e) => {
     }, 100);
 });
 const state = vscode.getState();
-if (state && state.scrollTop && state.scrollLeft)
-    page_ele.parentElement.scrollTo({
+if (state && typeof state.scrollTop=="number" && typeof state.scrollLeft=="number")
+    page_container.scrollTo({
         top: state.scrollTop,
         left: state.scrollLeft,
         behavior: "smooth",
@@ -84,10 +91,33 @@ window.addEventListener("message", async (event) => {
     console.log(message.command);
     switch (message.command) {
         case "load":
-            page_ele.src = message.src;
+            for (let i = 0; i < page_eles.length; i++) {
+                if (page_eles[i].id === "page_" + message.data.page)
+                    page_eles[i].innerHTML = `<img src="${message.src}" style="height:${message.data.height}pt;width:${message.data.width}pt">`;
+            }
             META = message.data;
             break;
     }
 });
 
-resize();
+
+
+
+var observer = new IntersectionObserver(function (entries) {
+    const id = entries[0].target.id
+    if (id.startsWith("page_")) {
+        const page = parseInt(id.replace("page_", ""))
+        visible_pages[page] = entries[0].isIntersecting
+        if (entries[0].isIntersecting === true) {
+            load(page)
+        }
+    }
+    console.log(visible_pages)
+}, { threshold: [0] });
+
+
+for (let i = 0; i < page_eles.length; i++) {
+    observer.observe(page_eles[i]);
+    console.log(page_eles[i].id)
+    page_eles[i].addEventListener("click", jumpSource);
+}
