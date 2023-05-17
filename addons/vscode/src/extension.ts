@@ -136,7 +136,7 @@ class Handler extends PreviewHandler {
     async click(x: number, y: number,page:number): Promise<ClickDest|undefined> {
         const res = await cmd.jumpFromClick(this.typ, page, x, y);
         if(res?.type===ClickDestType.Source){
-            this.jumpToSource(res)
+            await this.jumpToSource(res)
         }
         if(res?.type===ClickDestType.Url){
             await env.openExternal(Uri.parse(res.url))
