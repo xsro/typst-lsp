@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, result};
 
 use serde_json::{Value, json};
 use tower_lsp::{
@@ -174,18 +174,18 @@ impl TypstServer {
         //the page idx
         let Some(page) = arguments.get(1).and_then(|v| v.as_u64()) else {
             return Err(Error::invalid_params(
-                "Missing page as third argument",
+                "Missing page as second argument",
             ));
         };
 
         let Some(x) = arguments.get(2).and_then(|v| v.as_f64()) else {
             return Err(Error::invalid_params(
-                "Missing page as third argument",
+                "Missing x position as third argument",
             ));
         };
         let Some(y) = arguments.get(3).and_then(|v| v.as_f64()) else {
             return Err(Error::invalid_params(
-                "Missing page as third argument",
+                "Missing y position as fourth argument",
             ));
         };
 
@@ -237,6 +237,77 @@ impl TypstServer {
                         return Ok(Some(result));
                     },
                 }
+            };
+        }
+        self.update_all_diagnostics(workspace, diagnostics).await;
+        Ok(None)
+    }
+
+    pub async fn jump_from_cursor(&self, arguments: Vec<Value>) -> Result<Option<Value>>{
+        if arguments.is_empty() {
+            return Err(Error::invalid_params("Missing file URI argument"));
+        }
+
+        //the document uri to compile
+        let Some(file_uri) = arguments.first().and_then(|v| v.as_str()) 
+        else {
+            return Err(Error::invalid_params(
+                "Missing file URI as first argument",
+            ));
+        };
+        let file_uri = Url::parse(file_uri)
+        .map_err(|_| Error::invalid_params("Parameter is not a valid URI"))?;
+
+        //the page idx
+        let Some(page) = arguments.get(1).and_then(|v| v.as_u64()) else {
+            return Err(Error::invalid_params(
+                "Missing page as second argument",
+            ));
+        };
+
+        let Some(pos) = arguments.get(2).and_then(|v| v.as_u64()) else {
+            return Err(Error::invalid_params(
+                "Missing pos as third argument",
+            ));
+        };
+
+        let page_index:usize=page.try_into().unwrap();
+
+        let (world, source_id) = self.get_world_with_main_uri(&file_uri).await;
+        let workspace = world.get_workspace();
+        let source = workspace.sources.get_open_source_by_id(source_id);
+
+        let diagnostics;
+
+        {
+            let result=self.compile_source(&world);
+            let document=result.0;
+            diagnostics=result.1;
+            if let Some(document) = document {
+                if document.pages.len()<= page_index{
+                    return Err(Error::invalid_params(
+                        "Page out of range",
+                    ));
+                };
+                let frame=&document.pages[page_index];
+                let frames=&document.pages;
+                let width=document.pages[page_index].width();// in pt
+                let height=document.pages[page_index].height();// in pt
+
+                todo!();
+
+                let jump=typst::ide::jump_from_cursor( frames,source.into() , pos as usize);
+                if jump.is_none() {
+                    return Ok(None)
+                }
+                let jump=jump.unwrap();
+                let result=json!({
+                    "type":3,
+                    "page":jump.page,
+                    "x":(jump.point.x/width),
+                    "y":(jump.point.y/height),
+                });
+                return Ok(Some(result));
             };
         }
         self.update_all_diagnostics(workspace, diagnostics).await;
