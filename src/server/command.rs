@@ -294,20 +294,20 @@ impl TypstServer {
                 let width=document.pages[page_index].width();// in pt
                 let height=document.pages[page_index].height();// in pt
 
-                todo!();
+                unimplemented!();
 
-                let jump=typst::ide::jump_from_cursor( frames,source.into() , pos as usize);
-                if jump.is_none() {
-                    return Ok(None)
-                }
-                let jump=jump.unwrap();
-                let result=json!({
-                    "type":3,
-                    "page":jump.page,
-                    "x":(jump.point.x/width),
-                    "y":(jump.point.y/height),
-                });
-                return Ok(Some(result));
+                // let jump=typst::ide::jump_from_cursor( frames,source.into() , pos as usize);
+                // if jump.is_none() {
+                //     return Ok(None)
+                // }
+                // let jump=jump.unwrap();
+                // let result=json!({
+                //     "type":3,
+                //     "page":jump.page,
+                //     "x":(jump.point.x/width),
+                //     "y":(jump.point.y/height),
+                // });
+                // return Ok(Some(result));
             };
         }
         self.update_all_diagnostics(workspace, diagnostics).await;

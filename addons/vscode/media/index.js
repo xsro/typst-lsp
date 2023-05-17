@@ -105,6 +105,17 @@ window.addEventListener("message", async (event) => {
             }
             META = message.data;
             break;
+        case "scroll":
+            let heights=0;
+            for(let i=0;i<message.page-1;i++){
+                heights+=page_eles[i].clientHeight;
+            }
+            page_container.scrollTo({
+                top: heights+message.y*page_eles[message.page-1].clientHeight,
+                left: message.x*page_eles[message.page-1].clientWidth,
+                behavior: "smooth",
+            });
+            break
     }
 });
 
