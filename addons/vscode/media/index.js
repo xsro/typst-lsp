@@ -47,6 +47,14 @@ function resize(scale = undefined) {
         
         ele.style.width = oldSize[ele.id].width * scale + "px";
         ele.style.height = oldSize[ele.id].height * scale + "px";
+        let img_ele=null;
+        ele.childNodes.forEach(val=>{
+            if(val.tagName==="IMG") img_ele=val;
+        })
+        if(img_ele){
+            img_ele.style.width = oldSize[ele.id].width * scale + "px";
+            img_ele.style.height = oldSize[ele.id].height * scale + "px";
+        }
     }
 }
 scale_ele.addEventListener("input", ()=>resize(parseFloat(scale_ele.value)))
@@ -119,5 +127,15 @@ var observer = new IntersectionObserver(function (entries) {
 for (let i = 0; i < page_eles.length; i++) {
     observer.observe(page_eles[i]);
     console.log(page_eles[i].id)
-    page_eles[i].addEventListener("click", jumpSource);
+    page_eles[i].addEventListener("click", (event)=>{
+        if(event.target.tagName==="DIV"){
+            const id = event.target.id
+            const page = parseInt(id.replace("page_", ""))
+            if (entries[0].isIntersecting === true) {
+                load(page)
+            }
+        }else{
+            jumpSource(event)
+        } 
+    });
 }
