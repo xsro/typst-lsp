@@ -5,7 +5,7 @@ import * as os from "os";
 import * as fs from "fs";
 import { resolve } from "path";
 import * as vscode from "vscode";
-import { PNGData } from "./commands";
+import { ClickDest, ClickDestType, PNGData } from "./commands";
 
 const tempdir = resolve(os.tmpdir(), "typst-lsp-vscode");
 export function tempfile(basename: string, dir = false): string {
@@ -35,9 +35,9 @@ export class PreviewHandler {
     update_page_config(): Promise<void> | void {
         return;
     }
-    click(x: number, y: number,page:number): Promise<void> | void {
+    click(x: number, y: number,page:number): Promise<ClickDest|undefined>  | undefined{
         console.log(x, y,page);
-        return;
+        return undefined;
     }
 }
 
@@ -121,7 +121,10 @@ export class PdfPreviewPanel {
                         this.updateSrc();
                         return;
                     case "click":
-                        this.handler.click(message.x, message.y,message.page);
+                        const res=await this.handler.click(message.x, message.y,message.page);
+                        if(res?.type===ClickDestType.Position){
+                            this.scrollTo(res.page,res.x,res.y)
+                        }
                         return;
                 }
             },
@@ -135,6 +138,12 @@ export class PdfPreviewPanel {
             command: "load",
             data: this.handler.data,
             src: this._panel.webview.asWebviewUri(this.handler.data.src).toString(),
+        });
+    }
+    public scrollTo(page:number,x:number,y:number):void{
+        this._panel.webview.postMessage({
+            command: "scroll",
+            page,x,y,
         });
     }
 

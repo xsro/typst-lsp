@@ -5,6 +5,7 @@ import {
     commands,
     Uri,
     WorkspaceConfiguration,
+    env,
 } from "vscode";
 import * as path from "path";
 import * as fs from "fs";
@@ -16,7 +17,7 @@ import {
     type ServerOptions,
 } from "vscode-languageclient/node";
 import { PdfPreviewPanel, tempfile, PreviewHandler } from "./viewer";
-import { ClientCommand } from "./commands";
+import { ClickDest, ClickDestSource, ClickDestType, ClientCommand } from "./commands";
 import { Selection } from "vscode";
 import { ViewColumn } from "vscode";
 
@@ -112,28 +113,35 @@ class Handler extends PreviewHandler {
         const res = await cmd.exportPng(this.typ, png, this.data.page, this.pixel_per_pt);
         this.data = res;
     }
-    async click(x: number, y: number,page:number): Promise<void> {
-        const res = await cmd.jumpFromClick(this.typ, page, x, y);
-        if (res?.path != null) {
-            let viewColumn = ViewColumn.One;
-            window.visibleTextEditors.forEach((e) => {
-                if (e.document.uri.fsPath === res.path && e.viewColumn !== undefined) {
-                    viewColumn = e.viewColumn;
-                }
-            });
-            const doc = await workspace.openTextDocument(res.path);
-            if (res["byte offset"] != null) {
-                const buffer = Buffer.from(doc.getText());
-                const s = buffer.subarray(0, res["byte offset"]).toString();
-                const pos = doc.positionAt(s.length);
-                const range = doc.getWordRangeAtPosition(pos);
-                if (range !== undefined) {
-                    const selection = new Selection(range.start, range.end);
-                    await window.showTextDocument(Uri.file(res.path), { selection, viewColumn });
-                }
+    async jumpToSource(res:ClickDestSource){
+        if(res.path===null) return;
+        let viewColumn = ViewColumn.One;
+        window.visibleTextEditors.forEach((e) => {
+            if (e.document.uri.fsPath === res.path && e.viewColumn !== undefined) {
+                viewColumn = e.viewColumn;
+            }
+        });
+        const doc = await workspace.openTextDocument(res.path);
+        if (res["byte offset"] != null) {
+            const buffer = Buffer.from(doc.getText());
+            const s = buffer.subarray(0, res["byte offset"]).toString();
+            const pos = doc.positionAt(s.length);
+            const range = doc.getWordRangeAtPosition(pos);
+            if (range !== undefined) {
+                const selection = new Selection(range.start, range.end);
+                await window.showTextDocument(Uri.file(res.path), { selection, viewColumn });
             }
         }
-        return;
+    }
+    async click(x: number, y: number,page:number): Promise<ClickDest|undefined> {
+        const res = await cmd.jumpFromClick(this.typ, page, x, y);
+        if(res?.type===ClickDestType.Source){
+            this.jumpToSource(res)
+        }
+        if(res?.type===ClickDestType.Url){
+            await env.openExternal(Uri.parse(res.url))
+        }
+        return res;
     }
 }
 

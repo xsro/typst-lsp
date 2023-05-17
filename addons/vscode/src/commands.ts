@@ -12,10 +12,31 @@ export interface PNGData {
     typ: string;
 }
 
-export interface ClickDest {
+export enum ClickDestType{
+    Source=1,
+    Url=2,
+    Position=3,
+}
+
+export interface ClickDestSource {
+    type:ClickDestType.Source
     path: string | null;
     "byte offset": number | null;
 }
+
+export interface ClickDestUrl {
+    type:ClickDestType.Url;
+    url: string;
+}
+
+export interface ClickDestPosition {
+    type:ClickDestType.Position
+    page:number;
+    x:number;
+    y:number;
+}
+
+export type ClickDest =ClickDestSource|ClickDestUrl|ClickDestPosition
 
 export class ClientCommand {
     constructor(public client: () => LanguageClient) {}

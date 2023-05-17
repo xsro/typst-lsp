@@ -220,11 +220,22 @@ impl TypstServer {
                     typst::ide::Jump::Source(id, offset) => {
                         let url=workspace.sources.get_open_source_by_id(id.into());
                         let path=url.as_ref().path().to_string_lossy();
-                        let result=json!({"path":path,"byte offset":offset});
+                        let result=json!({"type":1,"path":path,"byte offset":offset});
                         return Ok(Some(result))
                     },
-                    typst::ide::Jump::Url(_) => todo!(),
-                    typst::ide::Jump::Position(_) => todo!(),
+                    typst::ide::Jump::Url(url) => {
+                        let result=json!({"type":2,"url":url.as_str()});
+                        return Ok(Some(result));
+                    }
+                    typst::ide::Jump::Position(p) => {
+                        let result=json!({
+                            "type":3,
+                            "page":p.page,
+                            "x":(p.point.x/width),
+                            "y":(p.point.y/height),
+                        });
+                        return Ok(Some(result));
+                    },
                 }
             };
         }
