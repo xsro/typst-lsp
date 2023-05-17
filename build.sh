@@ -5,9 +5,6 @@ cd addons/vscode
 mv README.md ../README.md.bak
 echo "# gitee.com/xsro/typst-lsp 修改版\n" >> README.md
 date >> README.md
-echo ``` >>README.md
-git status >>README.md
-echo ``` >>README.md
 cat ../README.md.bak >> README.md
 npm run package
 rm out/*.*
@@ -20,6 +17,8 @@ case "$OSTYPE" in
   msys*)    platform="WINDOWS" ;;
   *)        platform="unknown: $OSTYPE" ;;
 esac
-mv typst-lsp-$ver.vsix typst-lsp-${ver}_$platform-$(arch).vsix
+
+today=`date +"%Y%m%d-%k"`
+mv typst-lsp-$ver.vsix typst-lsp-${ver}_${today}_$platform-$(arch).vsix
 rm README.md
 mv  ../README.md.bak README.md
