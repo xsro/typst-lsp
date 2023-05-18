@@ -30,6 +30,11 @@ px_per_pt_ele.addEventListener("input",function (e){
         value:pxPerPt,
     });
 })
+document.getElementById("reload").addEventListener("click", function (e) {
+    vscode.postMessage({
+        command: "reload",
+    });
+})
 
 
 const oldSize = {}

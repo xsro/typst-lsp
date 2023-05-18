@@ -159,6 +159,9 @@ class Handler extends PreviewHandler {
         }
         return res;
     }
+    async reload(): Promise<void> {
+        await client?.restart();
+    }
 }
 
 

@@ -44,6 +44,10 @@ export class PreviewHandler {
         console.log(x, y,page);
         return undefined;
     }
+    // eslint-disable-next-line @typescript-eslint/require-await
+    async reload():Promise<void>{
+        return;
+    }
 }
 
 /**
@@ -117,11 +121,9 @@ export class PdfPreviewPanel {
                 switch (message.command) {
                     case "page":
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                        const { page, px_per_pt } = message;
+                        const { page } = message;
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                         this.handler.data.page = page;
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                        this.handler.pixel_per_pt = px_per_pt;
                         await this.handler.update_page_config();
                         this.updateSrc();
                         return;
@@ -134,6 +136,13 @@ export class PdfPreviewPanel {
                     case "px_per_pt":
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                         this.handler.pixel_per_pt = parseFloat(message.value);
+                        return;
+                    case "reload":
+                        await this.handler.reload();
+                        for(let i=0;i<this.handler.data.total_page;i++){
+                            this.handler.data.page = i;
+                            await this.handler.update_page_config();
+                        }
                         return;
                 }
             },
@@ -223,6 +232,7 @@ ${img}
                         <input id="scale" type="number" min="0.1" max="10" step="0.01" value="0">
                         <input id="window-width" type="button" value="▭">
                         <input id="window-height" type="button" value="▯">
+                        <input id="reload" type="button" value="⟳">
                         <label for="px_per_pt">PxPerPt</label>
                         <input id="px_per_pt" type="number" min="0.1" max="10" step="0.01" value="${this.handler.pixel_per_pt}"> 
                     </div>
