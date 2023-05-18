@@ -144,7 +144,7 @@ class Handler extends PreviewHandler {
             const pos = doc.positionAt(s.length);
             const range = doc.getWordRangeAtPosition(pos);
             if (range !== undefined) {
-                const selection = new Selection(range.start, range.end);
+                const selection = new Selection(range.start, pos);
                 await window.showTextDocument(Uri.file(res.path), { selection, viewColumn });
             }
         }
