@@ -17,7 +17,7 @@ import {
     type ServerOptions,
 } from "vscode-languageclient/node";
 import { PdfPreviewPanel, tempfile, PreviewHandler } from "./viewer";
-import { ClickDest, ClickDestSource, ClickDestType, ClientCommand } from "./commands";
+import { ClickDest, ClickDestSource, ClickDestType, ClientCommand, PNGData } from "./commands";
 import { Selection } from "vscode";
 import { ViewColumn } from "vscode";
 
@@ -103,6 +103,22 @@ async function commandExportCurrentPdf(): Promise<void> {
 }
 
 class Handler extends PreviewHandler {
+    protected _pixel_per_pt: number;
+    constructor(public typ: Uri, public png_folder: Uri, public data: PNGData,public ctx:ExtensionContext) {
+        super(typ, png_folder, data);
+        const gs=this.ctx.globalState.get("pixel_per_pt");
+        if(typeof gs==="number")
+            this._pixel_per_pt=gs;
+        else
+            this._pixel_per_pt=1;
+    }
+    public set pixel_per_pt(v: number) {
+        this._pixel_per_pt = v;
+        void this.ctx.globalState.update("pixel_per_pt", v);
+    }
+    public get pixel_per_pt(): number {
+        return this._pixel_per_pt;
+    }
     png_idx = 0;
     async update_page_config(): Promise<void> {
         this.png_idx = (this.png_idx + 1) % 100;
@@ -113,7 +129,7 @@ class Handler extends PreviewHandler {
         const res = await cmd.exportPng(this.typ, png, this.data.page, this.pixel_per_pt);
         this.data = res;
     }
-    async jumpToSource(res:ClickDestSource){
+    async jumpToSource(res:ClickDestSource):Promise<void>{
         if(res.path===null) return;
         let viewColumn = ViewColumn.One;
         window.visibleTextEditors.forEach((e) => {
@@ -145,6 +161,7 @@ class Handler extends PreviewHandler {
     }
 }
 
+
 /**
  * Implements the functionality for the 'Show PDF' button shown in the editor title
  * if a `.typ` file is opened.
@@ -166,8 +183,12 @@ async function commandShowPdf(ctx: ExtensionContext): Promise<void> {
         await window.showErrorMessage(`compile ${uri.fsPath} failed`, JSON.stringify(e));
     });
     if (typeof data !== "object") return;
-    const h = new Handler(uri, png_dir, data);
+
+    
+
+    const h = new Handler(uri, png_dir, data,ctx);
     PdfPreviewPanel.createOrShow(ctx.extensionUri, h);
+
     let last_run = 0;
     workspace.onDidChangeTextDocument(async (e) => {
         if (!e.document.uri.path.endsWith(".typ")) return;

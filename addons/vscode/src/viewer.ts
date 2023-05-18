@@ -28,9 +28,14 @@ function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
 }
 
 export class PreviewHandler {
-    pixel_per_pt = 1;
+    public set pixel_per_pt(v: number) {
+        this._pixel_per_pt = v;
+    }
+    public get pixel_per_pt(): number {
+        return this._pixel_per_pt;
+    }
+    protected _pixel_per_pt = 1;
     constructor(public typ: vscode.Uri, public png_folder: vscode.Uri, public data: PNGData) {
-        console.log(png_folder);
     }
     update_page_config(): Promise<void> | void {
         return;
@@ -126,6 +131,10 @@ export class PdfPreviewPanel {
                             this.scrollTo(res.page,res.x,res.y)
                         }
                         return;
+                    case "px_per_pt":
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                        this.handler.pixel_per_pt = parseFloat(message.value);
+                        return;
                 }
             },
             null,
@@ -215,7 +224,7 @@ ${img}
                         <input id="window-width" type="button" value="▭">
                         <input id="window-height" type="button" value="▯">
                         <label for="px_per_pt">PxPerPt</label>
-                        <input id="px_per_pt" type="number" min="0.1" max="10" step="0.01" value="1"> 
+                        <input id="px_per_pt" type="number" min="0.1" max="10" step="0.01" value="${this.handler.pixel_per_pt}"> 
                     </div>
                     <div class="page_container">
                         ${pages.join("")}

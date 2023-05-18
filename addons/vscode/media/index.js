@@ -23,6 +23,14 @@ function load(page) {
     });
 }
 
+px_per_pt_ele.addEventListener("input",function (e){
+    const pxPerPt=e.target.value;
+    vscode.postMessage({
+        command: "px_per_pt",
+        value:pxPerPt,
+    });
+})
+
 
 const oldSize = {}
 function resize(scale = undefined) {
