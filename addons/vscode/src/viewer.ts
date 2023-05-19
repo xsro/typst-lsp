@@ -142,6 +142,7 @@ export class PdfPreviewPanel {
                         for(let i=0;i<this.handler.data.total_page;i++){
                             this.handler.data.page = i;
                             await this.handler.update_page_config();
+                            this.updateSrc();
                         }
                         return;
                 }

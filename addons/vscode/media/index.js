@@ -113,8 +113,17 @@ window.addEventListener("message", async (event) => {
     switch (message.command) {
         case "load":
             for (let i = 0; i < page_eles.length; i++) {
-                if (page_eles[i].id === "page_" + message.data.page)
-                    page_eles[i].innerHTML = `<img src="${message.src}" style="height:${message.data.height}pt;width:${message.data.width}pt">`;
+                if (page_eles[i].id === "page_" + message.data.page){
+                    let img_ele=null;
+                    page_eles[i].childNodes.forEach(val=>{
+                        if(val.tagName==="IMG") img_ele=val;
+                    })
+                    if(img_ele){
+                        img_ele.src=message.src;
+                    }else{
+                        page_eles[i].innerHTML = `<img src="${message.src}" style="height:${message.data.height}pt;width:${message.data.width}pt">`;
+                    }
+                }
             }
             META = message.data;
             break;
