@@ -20,6 +20,9 @@
     overflow: scroll;
     display: block;
 }
+.page_container img{
+    background-color: aquamarine;
+}
 #page_canvas {
     max-width: none;
     max-height: none;
