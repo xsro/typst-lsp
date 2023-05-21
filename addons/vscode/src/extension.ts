@@ -16,6 +16,7 @@ import {
     type LanguageClientOptions,
     type ServerOptions,
 } from "vscode-languageclient/node";
+import { activate as activatePreview } from "./preview";
 
 let client: LanguageClient | undefined = undefined;
 
@@ -42,7 +43,7 @@ export function activate(context: ExtensionContext): Promise<void> {
     context.subscriptions.push(
         commands.registerCommand("typst-lsp.exportCurrentPdf", commandExportCurrentPdf)
     );
-    context.subscriptions.push(commands.registerCommand("typst-lsp.showPdf", commandShowPdf));
+    activatePreview(context)
     context.subscriptions.push(
         commands.registerCommand("typst-lsp.clearCache", commandClearCache)
     );

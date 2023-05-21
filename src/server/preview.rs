@@ -41,7 +41,7 @@ pub fn export_png(src:&Source,document: &Document,conf:&ExportPngConfig) -> Resu
             data: None,
         }
     })?;
-    let message=format!("{}:{}\r\n",sep,src.as_ref().path().to_string_lossy());
+    let message=format!("{}\t{}\t{}\r\n",sep,document.pages.len().to_string(),src.as_ref().path().to_string_lossy());
     file.write(message.as_bytes()).map_err(|e|{
         Error{
             code:tower_lsp::jsonrpc::ErrorCode::ServerError(4),
