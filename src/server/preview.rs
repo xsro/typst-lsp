@@ -25,7 +25,7 @@ impl Default for ExportPngConfig{
     fn default() -> Self {
         Self{
             fill:Color::Rgba(RgbaColor { r: 0, g: 0, b: 0, a: 0 }),
-            pixel_per_pt:F32withEq(1.0),
+            pixel_per_pt:F32withEq(1.5),
         }
     }
 }

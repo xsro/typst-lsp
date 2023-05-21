@@ -78,6 +78,7 @@ export function showTypst(uri: vscode.Uri, ctx: vscode.ExtensionContext): vscode
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     watcher.on("change", () => load_pages(panel.webview,uri,true))
     load_pages(panel.webview,uri,false)
+    panel.onDidDispose(()=>{watcher.close()})
     return panel
 }
 
