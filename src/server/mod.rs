@@ -22,6 +22,7 @@ pub mod signature;
 pub mod symbols;
 pub mod typst_compiler;
 pub mod watch;
+pub mod preview;
 
 pub struct TypstServer {
     client: Client,

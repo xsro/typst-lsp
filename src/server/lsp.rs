@@ -181,7 +181,7 @@ impl LanguageServer for TypstServer {
             .get_open_source_by_id(source_id);
 
         if config.export_pdf == ExportPdfMode::OnSave {
-            self.run_diagnostics_and_export(&world, source).await;
+            self.run_diagnostics_and_export(&world, source,&config).await;
         }
     }
 

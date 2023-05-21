@@ -11,6 +11,7 @@ pub enum ExportPdfMode {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Config {
     pub export_pdf: ExportPdfMode,
+    pub png: crate::server::preview::ExportPngConfig,
 }
 
 /// What counts as "1 character" for string indexing. We should always prefer UTF-8, but support
