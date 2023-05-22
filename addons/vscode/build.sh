@@ -7,6 +7,7 @@ mv README.md ../README.md.bak
 echo "# gitee.com/xsro/typst-lsp 修改版" >> README.md
 date >> README.md
 cat ../README.md.bak >> README.md
+rm *.vsix
 npm run package
 rm out/*.*
 ver=`cat package.json | grep version | cut -d '"' -f 4`
