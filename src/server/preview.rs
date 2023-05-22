@@ -1,5 +1,5 @@
 
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions,File};
 use std::path::PathBuf;
 use std::io::prelude::*;
 use std::env::temp_dir;
@@ -70,6 +70,19 @@ pub fn export_png(src:&Source,document: &Document,conf:&ExportPngConfig) -> Resu
     
         let width=document.pages[page_index].width();// in pt
         let height=document.pages[page_index].height();// in pt
+        File::create(dest.join(format!("{}.txt",page_index))).map_err(|e|{
+            Error{
+                code:tower_lsp::jsonrpc::ErrorCode::ServerError(4),
+                message: e.to_string(),
+                data: None,
+            }
+        })?.write(format!("{}\t{}\r\n",width.to_pt(),height.to_pt()).as_bytes()).map_err(|e|{
+            Error{
+                code:tower_lsp::jsonrpc::ErrorCode::ServerError(4),
+                message: e.to_string(),
+                data: None,
+            }
+        })?;
     }
     
     Ok(dest)

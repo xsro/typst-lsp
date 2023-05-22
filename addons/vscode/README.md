@@ -1,3 +1,5 @@
+# gitee.com/xsro/typst-lsp 修改版
+2023年05月22日 10:28:26
 # Typst LSP VS Code Extension
 
 A brand-new VS Code extension for Typst.
