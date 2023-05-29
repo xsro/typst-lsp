@@ -379,7 +379,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d52186a39c335aa6f79fc0bf1c3cf854870b6ad4e50a7bb8a59b4ba1331f478a"
 dependencies = [
  "log",
- "memmap2",
+ "memmap2 0.5.10",
  "ttf-parser 0.17.1",
 ]
 
@@ -730,6 +730,15 @@ name = "memmap2"
 version = "0.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83faa42c0a078c393f6b29d5db232d8be22776a891f8f56e5284faee4a20b327"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "memmap2"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d28bba84adfe6646737845bc5ebbfa2c08424eb1c37e94a1fd2a82adb56a872"
 dependencies = [
  "libc",
 ]
@@ -1723,7 +1732,7 @@ dependencies = [
  "if_chain",
  "itertools",
  "lazy_static",
- "memmap2",
+ "memmap2 0.6.2",
  "once_cell",
  "parking_lot",
  "regex",
