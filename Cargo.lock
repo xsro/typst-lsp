@@ -379,7 +379,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d52186a39c335aa6f79fc0bf1c3cf854870b6ad4e50a7bb8a59b4ba1331f478a"
 dependencies = [
  "log",
- "memmap2",
+ "memmap2 0.5.10",
  "ttf-parser 0.17.1",
 ]
 
@@ -661,9 +661,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.141"
+version = "0.2.147"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3304a64d199bb964be99741b7a14d26972741915b3649639149b2479bb46f4b5"
+checksum = "b4668fb0ea861c1df094127ac5f1da3409a82116a4ba74fca2e58ef927159bb3"
 
 [[package]]
 name = "linked-hash-map"
@@ -730,6 +730,15 @@ name = "memmap2"
 version = "0.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83faa42c0a078c393f6b29d5db232d8be22776a891f8f56e5284faee4a20b327"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "memmap2"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f49388d20533534cd19360ad3d6a7dadc885944aa802ba3995040c5ec11288c6"
 dependencies = [
  "libc",
 ]
@@ -1723,7 +1732,7 @@ dependencies = [
  "if_chain",
  "itertools",
  "lazy_static",
- "memmap2",
+ "memmap2 0.7.1",
  "once_cell",
  "parking_lot",
  "regex",
